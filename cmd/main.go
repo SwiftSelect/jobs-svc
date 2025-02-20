@@ -1,46 +1,42 @@
 package main
 
 import (
-	"database/sql"
+	"log"
+	"net/http"
+
 	"github.com/gorilla/mux"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"github.com/joho/godotenv"
 	"jobs-svc/internal/handlers"
 	"jobs-svc/internal/models"
 	"jobs-svc/internal/repos"
 	"jobs-svc/internal/services"
-	"log"
-	"net/http"
 )
 
+func LoadEnv() {
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file")
+	}
+}
+
 func main() {
+	LoadEnv()
 
-	log.Println("Starting connection to jobs database...")
-	//TODO: move to config file and use env
-	conn := "postgres://postgres:password@localhost:5432/jobs_db?sslmode=disable"
-	db, err := sql.Open("postgres", conn)
-	defer db.Close()
+	models.ConnectPostgres()
+	models.ConnectMongo()
+
+	log.Println("Starting connection to databases...")
+	jobsDB := models.PostgresDB
+	appsDB := models.MongoDB
+
+	err := jobsDB.AutoMigrate(&models.Job{})
 	if err != nil {
-		log.Fatal("failed to connect to the database:", err)
+		return
 	}
-	if err = db.Ping(); err != nil {
-		log.Fatalf("failed to ping the database: %v", err)
-	}
+	log.Println("Jobs database migration completed.")
 
-	log.Println("Database connection established successfully")
-
-	// connect with orm
-	ormdb, err := gorm.Open("postgres", db)
-	if err != nil {
-		log.Fatalf("failed to initialize orm: %v", err)
-	}
-	defer ormdb.Close()
-	log.Printf("ORM connected to database")
-
-	ormdb.AutoMigrate(&models.Job{}, &models.Application{})
-
-	jobRepo := repos.JobRepo{DB: ormdb}
-	applicationRepo := repos.AppRepo{DB: ormdb}
+	// init repositories, services,handlers
+	jobRepo := repos.JobRepo{DB: jobsDB}
+	applicationRepo := repos.AppRepo{Collection: appsDB.Collection("applications")}
 
 	jobService := services.JobService{JobRepo: jobRepo}
 	applicationService := services.ApplicationsService{AppRepo: applicationRepo}
@@ -50,14 +46,17 @@ func main() {
 
 	router := mux.NewRouter()
 
+	// job related routes
 	router.HandleFunc("/jobs", jobHandler.CreateJob).Methods("POST")
 	router.HandleFunc("/jobs", jobHandler.GetJobs).Methods("GET")
 	router.HandleFunc("/jobs/{id}", jobHandler.GetJobByID).Methods("GET")
 	router.HandleFunc("/jobs/{id}", jobHandler.UpdateJob).Methods("PUT")
 	router.HandleFunc("/jobs/{id}", jobHandler.DeleteJob).Methods("DELETE")
 
+	// app related routes
 	router.HandleFunc("/applications", applicationHandler.CreateApplication).Methods("POST")
 	router.HandleFunc("/applications/job/{id}", applicationHandler.GetApplicationsByJobID).Methods("GET")
 
+	log.Println("Server started on port 8080...")
 	log.Fatal(http.ListenAndServe(":8080", router))
 }

@@ -1,7 +1,8 @@
 package repos
 
 import (
-	"github.com/jinzhu/gorm"
+	//"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 	"jobs-svc/internal/models"
 )
 

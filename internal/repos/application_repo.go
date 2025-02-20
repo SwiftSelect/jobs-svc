@@ -1,21 +1,51 @@
 package repos
 
 import (
-	"github.com/jinzhu/gorm"
+	"context"
+	"errors"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"jobs-svc/internal/models"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type AppRepo struct {
-	DB *gorm.DB
+	Collection *mongo.Collection
 }
 
 func (repo *AppRepo) CreateApplication(application *models.Application) error {
-	return repo.DB.Create(application).Error
+	if application.ApplicationID == "" {
+		application.ApplicationID = primitive.NewObjectID().Hex() // MongoDB ObjectID as string
+	}
+
+	if application.JobID == "" || application.CandidateID == "" {
+		return errors.New("JobID and CandidateID are required")
+	}
+
+	application.Status.LastUpdated = time.Now()
+
+	_, err := repo.Collection.InsertOne(context.TODO(), application)
+	return err
 }
 
-// get all apps for a specific job listing
-func (repo *AppRepo) GetApplicationsByJobID(jobID uint) ([]models.Application, error) {
+func (repo *AppRepo) GetApplicationsByJobID(jobID string) ([]models.Application, error) {
 	var applications []models.Application
-	err := repo.DB.Where("job_id = ?", jobID).Find(&applications).Error
-	return applications, err
+	filter := bson.M{"job_id": jobID}
+	cursor, err := repo.Collection.Find(context.TODO(), filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.TODO())
+
+	for cursor.Next(context.TODO()) {
+		var application models.Application
+		if err := cursor.Decode(&application); err != nil {
+			return nil, err
+		}
+		applications = append(applications, application)
+	}
+
+	return applications, nil
 }

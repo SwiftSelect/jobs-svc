@@ -13,6 +13,6 @@ func (s *ApplicationsService) CreateApplication(app *models.Application) error {
 	return s.AppRepo.CreateApplication(app)
 }
 
-func (s *ApplicationsService) GetApplicationsByJobID(jobID uint) ([]models.Application, error) {
+func (s *ApplicationsService) GetApplicationsByJobID(jobID string) ([]models.Application, error) {
 	return s.AppRepo.GetApplicationsByJobID(jobID)
 }
