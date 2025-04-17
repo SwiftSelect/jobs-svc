@@ -11,20 +11,20 @@ import (
 
 type Job struct {
 	gorm.Model
-	Title        string `gorm:"not null"`
-	Description  string `gorm:"not null"`
-	Requirements string `gorm:"not null"`
-	Location     string
-	Status       JobStatus `gorm:"not null"`
-	PostedDate   time.Time `gorm:"not null"`
-	RecruiterId  uint
+	Title        string    `gorm:"not null" json:"title"`
+	Description  string    `gorm:"not null" json:"description"`
+	Requirements string    `gorm:"not null" json:"requirements"`
+	Location     string    `json:"location"`
+	Status       JobStatus `gorm:"not null" json:"status"`
+	PostedDate   time.Time `gorm:"not null" json:"postedDate"`
+	RecruiterId  uint      `json:"recruiterId"`
 }
 
 type Recruiter struct {
 	gorm.Model
-	Name  string `gorm:"not null"`
-	Email string `gorm:"not null"`
-	Jobs  []Job
+	Name  string `gorm:"not null" json:"name"`
+	Email string `gorm:"not null" json:"email"`
+	Jobs  []Job  `json:"jobs"`
 }
 
 type JobStatus int
