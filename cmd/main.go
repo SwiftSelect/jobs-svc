@@ -1,6 +1,7 @@
 package main
 
 import (
+	"jobs-svc/middleware"
 	"log"
 	"net/http"
 
@@ -45,6 +46,7 @@ func main() {
 	applicationHandler := handlers.ApplicationHandler{ApplicationService: applicationService}
 
 	router := mux.NewRouter()
+	router.Use(middleware.CORSMiddleware)
 
 	// job related routes
 	router.HandleFunc("/jobs", jobHandler.CreateJob).Methods("POST")
