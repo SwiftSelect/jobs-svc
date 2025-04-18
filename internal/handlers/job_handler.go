@@ -46,8 +46,26 @@ func (h *JobHandler) GetJobByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// calculate and add days posted ago field
+	response := map[string]interface{}{
+		"id":               job.ID,
+		"title":            job.Title,
+		"overview":         job.Overview,
+		"description":      job.Description,
+		"company":          job.Company,
+		"skills":           job.Skills,
+		"experience":       job.Experience,
+		"location":         job.Location,
+		"status":           job.Status,
+		"postedDate":       job.PostedDate,
+		"salaryRange":      job.SalaryRange,
+		"recruiterId":      job.RecruiterId,
+		"daysPostedAgo":    job.DaysPostedAgo(),
+		"benefitsAndPerks": job.BenefitsAndPerks,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(job); err != nil {
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, "Failed to encode job response", http.StatusInternalServerError)
 	}
 }
