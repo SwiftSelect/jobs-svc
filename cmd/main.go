@@ -46,10 +46,11 @@ func main() {
 	applicationHandler := handlers.ApplicationHandler{ApplicationService: applicationService}
 
 	router := mux.NewRouter()
-	router.Use(middleware.CORSMiddleware)
+	//router.Use(middleware.CORSMiddleware)
 
 	// job related routes
-	router.HandleFunc("/jobs", jobHandler.CreateJob).Methods("POST")
+	//router.HandleFunc("/jobs", jobHandler.CreateJob).Methods("POST")
+	router.Handle("/jobs", middleware.AuthMiddleware("create_job")(http.HandlerFunc(jobHandler.CreateJob))).Methods("POST")
 	router.HandleFunc("/jobs", jobHandler.GetJobs).Methods("GET")
 	router.HandleFunc("/jobs/{id}", jobHandler.GetJobByID).Methods("GET")
 	router.HandleFunc("/jobs/{id}", jobHandler.UpdateJob).Methods("PUT")
@@ -59,6 +60,8 @@ func main() {
 	router.HandleFunc("/applications", applicationHandler.CreateApplication).Methods("POST")
 	router.HandleFunc("/applications/job/{id}", applicationHandler.GetApplicationsByJobID).Methods("GET")
 
+	corsRouter := middleware.CORSMiddleware(router)
+
 	log.Println("Server started on port 8080...")
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServe(":8080", corsRouter))
 }
