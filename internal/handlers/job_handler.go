@@ -77,11 +77,43 @@ func (h *JobHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
+		return
+	}
+
+	//// Get user info from Auth microservice
+	//userInfo, err := clients.FetchUserInfoFromAuthMicroservice(authHeader)
+	//if err != nil {
+	//	http.Error(w, "Failed to fetch user info", http.StatusUnauthorized)
+	//	return
+	//}
+	//
+	//// Only recruiters can create jobs
+	//if userInfo.RoleID != 2 { // Assuming RoleID 2 is RECRUITER
+	//	http.Error(w, "Forbidden: Only recruiters can create jobs", http.StatusForbidden)
+	//	return
+	//}
+	//
+	//// Assign recruiter ID and company name from user/org info
+	//job.RecruiterId = uint(userInfo.ID)
+	//
+	//if userInfo.Org == nil || userInfo.Org.Name == "" {
+	//	http.Error(w, "Missing organization details for recruiter", http.StatusInternalServerError)
+	//	return
+	//}
+	//job.Company = userInfo.Org.Name
+	//job.Size = userInfo.Org.Size
+	//job.CompanyDescription = userInfo.Org.CompanyDescription
+
+	// Save job
 	if err := h.JobService.CreateJob(&job); err != nil {
 		http.Error(w, "Failed to create job", http.StatusInternalServerError)
 		return
 	}
 
+	// Respond with created job
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(job); err != nil {
