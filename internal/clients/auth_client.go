@@ -39,7 +39,7 @@ func ValidateToken(token string, action string) (*UserResponse, error) {
 	}
 	payloadBytes, _ := json.Marshal(payload)
 
-	resp, err := http.Post("http://localhost:8000/auth/validate", "application/json", bytes.NewBuffer(payloadBytes))
+	resp, err := http.Post("http://localhost:8005/auth/validate", "application/json", bytes.NewBuffer(payloadBytes))
 	if err != nil {
 		return nil, errors.New("failed to connect to auth microservice")
 	}
