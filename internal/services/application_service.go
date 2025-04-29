@@ -1,7 +1,7 @@
 package services
 
 import (
-	"jobs-svc/internal/models"
+	"go.mongodb.org/mongo-driver/bson"
 	"jobs-svc/internal/repos"
 )
 
@@ -9,10 +9,15 @@ type ApplicationsService struct {
 	AppRepo repos.AppRepo
 }
 
-func (s *ApplicationsService) CreateApplication(app *models.Application) error {
+func (s *ApplicationsService) CreateApplication(app bson.M) error {
 	return s.AppRepo.CreateApplication(app)
 }
 
-func (s *ApplicationsService) GetApplicationsByJobID(jobID string) ([]models.Application, error) {
+func (s *ApplicationsService) GetApplicationsByJobID(jobID string) ([]bson.M, error) {
 	return s.AppRepo.GetApplicationsByJobID(jobID)
+}
+
+// CreateUniqueIndex creates a unique compound index on candidate_id and job_id
+func (s *ApplicationsService) CreateUniqueIndex() error {
+	return s.AppRepo.CreateUniqueIndex()
 }

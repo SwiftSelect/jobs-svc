@@ -3,9 +3,13 @@ package handlers
 import (
 	"encoding/json"
 	"github.com/gorilla/mux"
-	"jobs-svc/internal/models"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	//"jobs-svc/internal/models"
 	"jobs-svc/internal/services"
+	"log"
 	"net/http"
+	"strings"
 )
 
 type ApplicationHandler struct {
@@ -13,39 +17,136 @@ type ApplicationHandler struct {
 }
 
 func (h *ApplicationHandler) CreateApplication(w http.ResponseWriter, r *http.Request) {
-	var application models.Application
+	var application bson.M
+	log.Println("Creating application..")
 	if err := json.NewDecoder(r.Body).Decode(&application); err != nil {
 		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
 		return
 	}
+	log.Println("Application:", application)
 
-	if application.JobID == "" || application.CandidateID == "" {
+	// Generate application ID if not provided
+	if application["applicationId"] == nil || application["applicationId"] == "" {
+		application["applicationId"] = primitive.NewObjectID().Hex()
+	}
+
+	mongoDoc := convertToSnakeCase(application)
+
+	// Validate required fields
+	if mongoDoc["job_id"] == nil || mongoDoc["candidate_id"] == nil {
 		http.Error(w, "JobID and CandidateID are required", http.StatusBadRequest)
 		return
 	}
 
-	if err := h.ApplicationService.CreateApplication(&application); err != nil {
+	if err := h.ApplicationService.CreateApplication(mongoDoc); err != nil {
 		http.Error(w, "Failed to create application", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(application)
+	json.NewEncoder(w).Encode(application) // Return original camelCase document with generated ID
 }
 
 func (h *ApplicationHandler) GetApplicationsByJobID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	jobID := vars["id"] // MongoDB uses string IDs
+	jobID := vars["id"]
 	applications, err := h.ApplicationService.GetApplicationsByJobID(jobID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	var responses []bson.M
+	for _, app := range applications {
+		responses = append(responses, convertToCamelCase(app))
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	err = json.NewEncoder(w).Encode(applications)
-	if err != nil {
+	if err := json.NewEncoder(w).Encode(responses); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func convertToSnakeCase(doc bson.M) bson.M {
+	result := make(bson.M)
+
+	for k, v := range doc {
+		if nested, ok := v.(map[string]interface{}); ok {
+			result[toSnakeCase(k)] = convertToSnakeCase(nested)
+			continue
+		}
+
+		if arr, ok := v.([]interface{}); ok {
+			var newArr []interface{}
+			for _, item := range arr {
+				if nested, ok := item.(map[string]interface{}); ok {
+					newArr = append(newArr, convertToSnakeCase(nested))
+				} else {
+					newArr = append(newArr, item)
+				}
+			}
+			result[toSnakeCase(k)] = newArr
+			continue
+		}
+
+		result[toSnakeCase(k)] = v
+	}
+
+	return result
+}
+
+func convertToCamelCase(doc bson.M) bson.M {
+	result := make(bson.M)
+
+	for k, v := range doc {
+		// Handle nested objects
+		if nested, ok := v.(map[string]interface{}); ok {
+			result[toCamelCase(k)] = convertToCamelCase(nested)
+			continue
+		}
+		if arr, ok := v.([]interface{}); ok {
+			var newArr []interface{}
+			for _, item := range arr {
+				if nested, ok := item.(map[string]interface{}); ok {
+					newArr = append(newArr, convertToCamelCase(nested))
+				} else {
+					newArr = append(newArr, item)
+				}
+			}
+			result[toCamelCase(k)] = newArr
+			continue
+		}
+
+		// Convert key to camelCase
+		result[toCamelCase(k)] = v
+	}
+
+	return result
+}
+
+func toSnakeCase(s string) string {
+	var result strings.Builder
+	for i, r := range s {
+		if i > 0 && r >= 'A' && r <= 'Z' {
+			result.WriteByte('_')
+		}
+		result.WriteRune(r)
+	}
+	return strings.ToLower(result.String())
+}
+
+func toCamelCase(s string) string {
+	var result strings.Builder
+	words := strings.Split(s, "_")
+	for i, word := range words {
+		if i == 0 {
+			result.WriteString(strings.ToLower(word))
+		} else {
+			result.WriteString(strings.Title(word))
+		}
+	}
+	return result.String()
 }

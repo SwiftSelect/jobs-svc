@@ -39,6 +39,12 @@ func main() {
 	jobRepo := repos.JobRepo{DB: jobsDB}
 	applicationRepo := repos.AppRepo{Collection: appsDB.Collection("applications")}
 
+	// Create unique index for applications
+	if err := applicationRepo.CreateUniqueIndex(); err != nil {
+		log.Fatal("Failed to create unique index for applications:", err)
+	}
+	log.Println("Created unique index on candidate_id and job_id")
+
 	jobService := services.JobService{JobRepo: jobRepo}
 	applicationService := services.ApplicationsService{AppRepo: applicationRepo}
 
