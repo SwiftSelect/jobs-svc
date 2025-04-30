@@ -3,14 +3,17 @@ package handlers
 import (
 	"encoding/json"
 	"github.com/gorilla/mux"
+	"jobs-svc/internal/kafka"
 	"jobs-svc/internal/models"
 	"jobs-svc/internal/services"
+	"log"
 	"net/http"
 	"strconv"
 )
 
 type JobHandler struct {
-	JobService services.JobService
+	JobService     services.JobService
+	KafkaPublisher *kafka.Publisher
 }
 
 func (h *JobHandler) GetJobs(w http.ResponseWriter, r *http.Request) {
@@ -83,34 +86,15 @@ func (h *JobHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//// Get user info from Auth microservice
-	//userInfo, err := clients.FetchUserInfoFromAuthMicroservice(authHeader)
-	//if err != nil {
-	//	http.Error(w, "Failed to fetch user info", http.StatusUnauthorized)
-	//	return
-	//}
-	//
-	//// Only recruiters can create jobs
-	//if userInfo.RoleID != 2 { // Assuming RoleID 2 is RECRUITER
-	//	http.Error(w, "Forbidden: Only recruiters can create jobs", http.StatusForbidden)
-	//	return
-	//}
-	//
-	//// Assign recruiter ID and company name from user/org info
-	//job.RecruiterId = uint(userInfo.ID)
-	//
-	//if userInfo.Org == nil || userInfo.Org.Name == "" {
-	//	http.Error(w, "Missing organization details for recruiter", http.StatusInternalServerError)
-	//	return
-	//}
-	//job.Company = userInfo.Org.Name
-	//job.Size = userInfo.Org.Size
-	//job.CompanyDescription = userInfo.Org.CompanyDescription
-
-	// Save job
 	if err := h.JobService.CreateJob(&job); err != nil {
 		http.Error(w, "Failed to create job", http.StatusInternalServerError)
 		return
+	}
+
+	// publish jobs to kafka
+	if err := h.KafkaPublisher.PublishJob(&job); err != nil {
+		log.Printf("Failed to publish job to Kafka: %v", err)
+		// Continue with the response even if Kafka publish fails
 	}
 
 	// Respond with created job

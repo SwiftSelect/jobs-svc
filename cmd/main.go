@@ -4,10 +4,12 @@ import (
 	"jobs-svc/middleware"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"jobs-svc/internal/handlers"
+	"jobs-svc/internal/kafka"
 	"jobs-svc/internal/models"
 	"jobs-svc/internal/repos"
 	"jobs-svc/internal/services"
@@ -35,6 +37,19 @@ func main() {
 	}
 	log.Println("Jobs database migration completed.")
 
+	// kafka init publisher
+	kafkaBrokers := []string{"localhost:9092"}
+	if os.Getenv("KAFKA_BROKERS") != "" {
+		kafkaBrokers = []string{os.Getenv("KAFKA_BROKERS")}
+	}
+
+	kafkaPublisher, err := kafka.NewPublisher(kafkaBrokers)
+	if err != nil {
+		log.Fatalf("Failed to initialize Kafka publisher: %v", err)
+	}
+	defer kafkaPublisher.Close()
+	log.Println("Kafka publisher initialized successfully")
+
 	// init repositories, services,handlers
 	jobRepo := repos.JobRepo{DB: jobsDB}
 	applicationRepo := repos.AppRepo{Collection: appsDB.Collection("applications")}
@@ -48,8 +63,14 @@ func main() {
 	jobService := services.JobService{JobRepo: jobRepo}
 	applicationService := services.ApplicationsService{AppRepo: applicationRepo}
 
-	jobHandler := handlers.JobHandler{JobService: jobService}
-	applicationHandler := handlers.ApplicationHandler{ApplicationService: applicationService}
+	jobHandler := handlers.JobHandler{
+		JobService:     jobService,
+		KafkaPublisher: kafkaPublisher,
+	}
+	applicationHandler := handlers.ApplicationHandler{
+		ApplicationService: applicationService,
+		KafkaPublisher:    kafkaPublisher,
+	}
 
 	router := mux.NewRouter()
 	//router.Use(middleware.CORSMiddleware)

@@ -5,15 +5,17 @@ import (
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	//"jobs-svc/internal/models"
+	"jobs-svc/internal/kafka"
 	"jobs-svc/internal/services"
 	"log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type ApplicationHandler struct {
 	ApplicationService services.ApplicationsService
+	KafkaPublisher    *kafka.Publisher
 }
 
 func (h *ApplicationHandler) CreateApplication(w http.ResponseWriter, r *http.Request) {
@@ -25,27 +27,53 @@ func (h *ApplicationHandler) CreateApplication(w http.ResponseWriter, r *http.Re
 	}
 	log.Println("Application:", application)
 
-	// Generate application ID if not provided
+
 	if application["applicationId"] == nil || application["applicationId"] == "" {
 		application["applicationId"] = primitive.NewObjectID().Hex()
 	}
 
+	// snake_case for mongo
 	mongoDoc := convertToSnakeCase(application)
 
-	// Validate required fields
+	// validate required fields
 	if mongoDoc["job_id"] == nil || mongoDoc["candidate_id"] == nil {
 		http.Error(w, "JobID and CandidateID are required", http.StatusBadRequest)
 		return
 	}
 
+	// validate status struct
+	if mongoDoc["status"] == nil {
+		mongoDoc["status"] = bson.M{
+			"current_stage": "Applied",
+			"last_updated": time.Now(),
+		}
+	} else if status, ok := mongoDoc["status"].(bson.M); ok {
+		if status["current_stage"] == nil {
+			status["current_stage"] = "Applied"
+		}
+		if status["last_updated"] == nil {
+			status["last_updated"] = time.Now()
+		}
+	}
+
+	log.Println("Inserting application:", mongoDoc)
 	if err := h.ApplicationService.CreateApplication(mongoDoc); err != nil {
 		http.Error(w, "Failed to create application", http.StatusInternalServerError)
 		return
 	}
 
+	// camelCase for res
+	response := convertToCamelCase(mongoDoc)
+
+	// publish application to kafka
+	if err := h.KafkaPublisher.PublishApplication(response); err != nil {
+		log.Printf("Failed to publish application to Kafka: %v", err)
+		// Continue with the response even if Kafka publish fails
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(application) // Return original camelCase document with generated ID
+	json.NewEncoder(w).Encode(response)
 }
 
 func (h *ApplicationHandler) GetApplicationsByJobID(w http.ResponseWriter, r *http.Request) {
@@ -102,7 +130,6 @@ func convertToCamelCase(doc bson.M) bson.M {
 	result := make(bson.M)
 
 	for k, v := range doc {
-		// Handle nested objects
 		if nested, ok := v.(map[string]interface{}); ok {
 			result[toCamelCase(k)] = convertToCamelCase(nested)
 			continue
@@ -120,7 +147,6 @@ func convertToCamelCase(doc bson.M) bson.M {
 			continue
 		}
 
-		// Convert key to camelCase
 		result[toCamelCase(k)] = v
 	}
 
