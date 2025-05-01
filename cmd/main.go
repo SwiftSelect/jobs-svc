@@ -86,6 +86,7 @@ func main() {
 	// app related routes
 	router.HandleFunc("/applications", applicationHandler.CreateApplication).Methods("POST")
 	router.HandleFunc("/applications/job/{id}", applicationHandler.GetApplicationsByJobID).Methods("GET")
+	router.HandleFunc("/applications/candidate/{id}", applicationHandler.GetApplicationByCandidateID).Methods("GET")
 
 	corsRouter := middleware.CORSMiddleware(router)
 

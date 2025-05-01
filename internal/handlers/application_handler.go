@@ -98,6 +98,26 @@ func (h *ApplicationHandler) GetApplicationsByJobID(w http.ResponseWriter, r *ht
 	}
 }
 
+func (h *ApplicationHandler) GetApplicationByCandidateID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	candidateID := vars["id"]
+	application, err := h.ApplicationService.GetApplicationByCandidateID(candidateID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Convert to camelCase for response
+	response := convertToCamelCase(application)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 func convertToSnakeCase(doc bson.M) bson.M {
 	result := make(bson.M)
 
