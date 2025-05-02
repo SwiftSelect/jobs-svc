@@ -95,6 +95,17 @@ func (repo *AppRepo) GetApplicationsByJobID(jobID string) ([]bson.M, error) {
 	return applications, nil
 }
 
+func (repo *AppRepo) GetApplicationByID(applicationID string) (bson.M, error) {
+	var application bson.M
+	filter := bson.M{"application_id": applicationID}
+	err := repo.Collection.FindOne(context.TODO(), filter).Decode(&application)
+	if err != nil {
+		return nil, err
+	}
+
+	return application, nil
+}
+
 func (repo *AppRepo) GetApplicationByCandidateID(candidateID string) (bson.M, error) {
 	var application bson.M
 	filter := bson.M{"candidate_id": candidateID}

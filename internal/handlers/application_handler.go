@@ -98,6 +98,28 @@ func (h *ApplicationHandler) GetApplicationsByJobID(w http.ResponseWriter, r *ht
 	}
 }
 
+func (h *ApplicationHandler) GetApplicationByID(w http.ResponseWriter, r *http.Request) {
+	
+	vars := mux.Vars(r)
+	applicationID := vars["id"]
+	application, err := h.ApplicationService.GetApplicationByID(applicationID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Convert to camelCase for response
+	response := convertToCamelCase(application)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)	
+	
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 func (h *ApplicationHandler) GetApplicationByCandidateID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	candidateID := vars["id"]

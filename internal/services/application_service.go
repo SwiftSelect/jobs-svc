@@ -17,6 +17,10 @@ func (s *ApplicationsService) GetApplicationsByJobID(jobID string) ([]bson.M, er
 	return s.AppRepo.GetApplicationsByJobID(jobID)
 }
 
+func (s *ApplicationsService) GetApplicationByID(applicationID string) (bson.M, error) {
+	return s.AppRepo.GetApplicationByID(applicationID)
+}
+
 func (s *ApplicationsService) GetApplicationByCandidateID(candidateID string) (bson.M, error) {
 	return s.AppRepo.GetApplicationByCandidateID(candidateID)
 }
