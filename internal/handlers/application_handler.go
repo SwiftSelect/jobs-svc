@@ -2,20 +2,21 @@ package handlers
 
 import (
 	"encoding/json"
-	"github.com/gorilla/mux"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"jobs-svc/internal/kafka"
 	"jobs-svc/internal/services"
 	"log"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ApplicationHandler struct {
 	ApplicationService services.ApplicationsService
-	KafkaPublisher    *kafka.Publisher
+	KafkaPublisher     *kafka.Publisher
 }
 
 func (h *ApplicationHandler) CreateApplication(w http.ResponseWriter, r *http.Request) {
@@ -26,7 +27,6 @@ func (h *ApplicationHandler) CreateApplication(w http.ResponseWriter, r *http.Re
 		return
 	}
 	log.Println("Application:", application)
-
 
 	if application["applicationId"] == nil || application["applicationId"] == "" {
 		application["applicationId"] = primitive.NewObjectID().Hex()
@@ -45,7 +45,7 @@ func (h *ApplicationHandler) CreateApplication(w http.ResponseWriter, r *http.Re
 	if mongoDoc["status"] == nil {
 		mongoDoc["status"] = bson.M{
 			"current_stage": "Applied",
-			"last_updated": time.Now(),
+			"last_updated":  time.Now(),
 		}
 	} else if status, ok := mongoDoc["status"].(bson.M); ok {
 		if status["current_stage"] == nil {
@@ -99,7 +99,6 @@ func (h *ApplicationHandler) GetApplicationsByJobID(w http.ResponseWriter, r *ht
 }
 
 func (h *ApplicationHandler) GetApplicationByID(w http.ResponseWriter, r *http.Request) {
-	
 	vars := mux.Vars(r)
 	applicationID := vars["id"]
 	application, err := h.ApplicationService.GetApplicationByID(applicationID)
@@ -112,8 +111,7 @@ func (h *ApplicationHandler) GetApplicationByID(w http.ResponseWriter, r *http.R
 	response := convertToCamelCase(application)
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)	
-	
+	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -144,15 +142,15 @@ func convertToSnakeCase(doc bson.M) bson.M {
 	result := make(bson.M)
 
 	for k, v := range doc {
-		if nested, ok := v.(map[string]interface{}); ok {
+		if nested, ok := v.(map[string]any); ok {
 			result[toSnakeCase(k)] = convertToSnakeCase(nested)
 			continue
 		}
 
-		if arr, ok := v.([]interface{}); ok {
-			var newArr []interface{}
+		if arr, ok := v.([]any); ok {
+			var newArr []any
 			for _, item := range arr {
-				if nested, ok := item.(map[string]interface{}); ok {
+				if nested, ok := item.(map[string]any); ok {
 					newArr = append(newArr, convertToSnakeCase(nested))
 				} else {
 					newArr = append(newArr, item)
@@ -172,24 +170,22 @@ func convertToCamelCase(doc bson.M) bson.M {
 	result := make(bson.M)
 
 	for k, v := range doc {
-		if nested, ok := v.(map[string]interface{}); ok {
-			result[toCamelCase(k)] = convertToCamelCase(nested)
-			continue
-		}
-		if arr, ok := v.([]interface{}); ok {
+		switch val := v.(type) {
+		case bson.M:
+			result[toCamelCase(k)] = convertToCamelCase(val)
+		case []interface{}:
 			var newArr []interface{}
-			for _, item := range arr {
-				if nested, ok := item.(map[string]interface{}); ok {
+			for _, item := range val {
+				if nested, ok := item.(bson.M); ok {
 					newArr = append(newArr, convertToCamelCase(nested))
 				} else {
 					newArr = append(newArr, item)
 				}
 			}
 			result[toCamelCase(k)] = newArr
-			continue
+		default:
+			result[toCamelCase(k)] = v
 		}
-
-		result[toCamelCase(k)] = v
 	}
 
 	return result
@@ -213,7 +209,12 @@ func toCamelCase(s string) string {
 		if i == 0 {
 			result.WriteString(strings.ToLower(word))
 		} else {
-			result.WriteString(strings.Title(word))
+			if len(word) > 0 {
+				result.WriteString(strings.ToUpper(string(word[0])))
+				if len(word) > 1 {
+					result.WriteString(strings.ToLower(word[1:]))
+				}
+			}
 		}
 	}
 	return result.String()
