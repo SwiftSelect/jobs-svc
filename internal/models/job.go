@@ -39,6 +39,15 @@ type Recruiter struct {
 
 type JobStatus int
 
+type JobSummary struct {
+	ID            uint   `json:"id"`
+	Title         string `json:"title"`
+	Company       string `json:"company"`
+	DaysPostedAgo int    `json:"daysPostedAgo"`
+	Location      string `json:"location"`
+	SalaryRange   string `json:"salaryRange"`
+}
+
 const (
 	Open JobStatus = iota
 	Closed

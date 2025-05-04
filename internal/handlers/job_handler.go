@@ -175,3 +175,51 @@ func (h *JobHandler) DeleteJob(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Job deleted successfully"))
 }
+
+func (h *JobHandler) GetJobsByIDs(w http.ResponseWriter, r *http.Request) {
+	var jobIDs []string
+	if err := json.NewDecoder(r.Body).Decode(&jobIDs); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	if len(jobIDs) == 0 {
+		http.Error(w, "No job IDs provided", http.StatusBadRequest)
+		return
+	}
+
+	// Convert string IDs to uint
+	uintIDs := make([]uint, len(jobIDs))
+	for i, idStr := range jobIDs {
+		id, err := strconv.ParseUint(idStr, 10, 32)
+		if err != nil {
+			http.Error(w, "Invalid job ID format", http.StatusBadRequest)
+			return
+		}
+		uintIDs[i] = uint(id)
+	}
+
+	jobs, err := h.JobService.GetJobsByIDs(uintIDs)
+	if err != nil {
+		http.Error(w, "Failed to fetch jobs", http.StatusInternalServerError)
+		return
+	}
+
+	// Convert to summary format
+	jobSummaries := make([]models.JobSummary, len(*jobs))
+	for i, job := range *jobs {
+		jobSummaries[i] = models.JobSummary{
+			ID:            job.ID,
+			Title:         job.Title,
+			Company:       job.Company,
+			DaysPostedAgo: job.DaysPostedAgo(),
+			Location:      job.Location,
+			SalaryRange:   job.SalaryRange,
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(jobSummaries); err != nil {
+		http.Error(w, "Failed to encode jobs response", http.StatusInternalServerError)
+	}
+}

@@ -101,6 +101,7 @@ func main() {
 	//router.HandleFunc("/jobs", jobHandler.CreateJob).Methods("POST")
 	router.Handle("/jobs", middleware.AuthMiddleware("create_job")(http.HandlerFunc(jobHandler.CreateJob))).Methods("POST")
 	router.HandleFunc("/jobs", jobHandler.GetJobs).Methods("GET")
+	router.HandleFunc("/jobs/summary", jobHandler.GetJobsByIDs).Methods("POST")
 	router.HandleFunc("/jobs/{id}", jobHandler.GetJobByID).Methods("GET")
 	router.HandleFunc("/jobs/{id}", jobHandler.UpdateJob).Methods("PUT")
 	router.HandleFunc("/jobs/{id}", jobHandler.DeleteJob).Methods("DELETE")
