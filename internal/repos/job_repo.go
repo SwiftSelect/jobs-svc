@@ -33,3 +33,9 @@ func (repo *JobRepo) UpdateJob(job *models.Job) error {
 func (repo *JobRepo) DeleteJob(id uint) error {
 	return repo.DB.Delete(&models.Job{}, id).Error
 }
+
+func (repo *JobRepo) GetJobsByIDs(ids []uint) (*[]models.Job, error) {
+	var jobs []models.Job
+	err := repo.DB.Where("id IN ?", ids).Find(&jobs).Error
+	return &jobs, err
+}

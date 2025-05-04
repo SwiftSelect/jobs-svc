@@ -28,3 +28,7 @@ func (s *JobService) UpdateJob(job *models.Job) error {
 func (s *JobService) DeleteJob(id uint) error {
 	return s.JobRepo.DeleteJob(id)
 }
+
+func (s *JobService) GetJobsByIDs(ids []uint) (*[]models.Job, error) {
+	return s.JobRepo.GetJobsByIDs(ids)
+}
