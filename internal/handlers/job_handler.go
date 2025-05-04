@@ -19,15 +19,6 @@ type JobHandler struct {
 	KafkaPublisher *kafka.Publisher
 }
 
-type JobSummary struct {
-	ID            uint   `json:"id"`
-	Title         string `json:"title"`
-	Company       string `json:"company"`
-	DaysPostedAgo int    `json:"daysPostedAgo"`
-	Location      string `json:"location"`
-	SalaryRange   string `json:"salaryRange"`
-}
-
 func (h *JobHandler) GetJobs(w http.ResponseWriter, r *http.Request) {
 	jobs, err := h.JobService.GetJobs()
 	if err != nil {
@@ -215,9 +206,9 @@ func (h *JobHandler) GetJobsByIDs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Convert to summary format
-	jobSummaries := make([]JobSummary, len(*jobs))
+	jobSummaries := make([]models.JobSummary, len(*jobs))
 	for i, job := range *jobs {
-		jobSummaries[i] = JobSummary{
+		jobSummaries[i] = models.JobSummary{
 			ID:            job.ID,
 			Title:         job.Title,
 			Company:       job.Company,
