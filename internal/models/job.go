@@ -1,12 +1,12 @@
 package models
 
 import (
-	"fmt"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 	"log"
 	"os"
 	"time"
+
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 type Job struct {
@@ -15,6 +15,7 @@ type Job struct {
 	Overview    string `gorm:"not null" json:"overview"`
 	Description string `gorm:"not null" json:"description"`
 	Company     string `gorm:"not null;default:'Engineering'" json:"company"`
+	CompanyID   uint   `gorm:"not null" json:"companyId"`
 	//CompanyDescription string    `json:"companyDescription"`
 	//Size               string    `json:"size"`
 	//Industry           string    `json:"industry"`
@@ -53,9 +54,10 @@ func InitPostgres(db *gorm.DB) {
 var PostgresDB *gorm.DB
 
 func ConnectPostgres() {
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
-		os.Getenv("POSTGRES_HOST"), os.Getenv("POSTGRES_USER"), os.Getenv("POSTGRES_PASSWORD"),
-		os.Getenv("POSTGRES_DB"), os.Getenv("POSTGRES_PORT"))
+	dsn := os.Getenv("POSTGRES_URI")
+	if dsn == "" {
+		log.Fatal("POSTGRES_URI environment variable is not set")
+	}
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {

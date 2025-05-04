@@ -2,13 +2,16 @@ package handlers
 
 import (
 	"encoding/json"
-	"github.com/gorilla/mux"
 	"jobs-svc/internal/kafka"
 	"jobs-svc/internal/models"
 	"jobs-svc/internal/services"
 	"log"
 	"net/http"
 	"strconv"
+
+	"jobs-svc/internal/clients"
+
+	"github.com/gorilla/mux"
 )
 
 type JobHandler struct {
@@ -56,6 +59,7 @@ func (h *JobHandler) GetJobByID(w http.ResponseWriter, r *http.Request) {
 		"overview":         job.Overview,
 		"description":      job.Description,
 		"company":          job.Company,
+		"companyId":        job.CompanyID,
 		"skills":           job.Skills,
 		"experience":       job.Experience,
 		"location":         job.Location,
@@ -80,11 +84,22 @@ func (h *JobHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
+	// Get user info from context (set by auth middleware)
+	userInfo, ok := r.Context().Value("userInfo").(*clients.UserResponse)
+	if !ok || userInfo == nil {
+		http.Error(w, "User information not found", http.StatusUnauthorized)
 		return
 	}
+
+	// Get company ID from user's organization
+	companyID, err := clients.GetCompanyID(userInfo)
+	if err != nil {
+		http.Error(w, "Failed to get company ID: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Set the company ID from the auth service response
+	job.CompanyID = uint(companyID)
 
 	if err := h.JobService.CreateJob(&job); err != nil {
 		http.Error(w, "Failed to create job", http.StatusInternalServerError)

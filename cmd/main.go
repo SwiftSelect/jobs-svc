@@ -6,13 +6,14 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/gorilla/mux"
-	"github.com/joho/godotenv"
 	"jobs-svc/internal/handlers"
 	"jobs-svc/internal/kafka"
 	"jobs-svc/internal/models"
 	"jobs-svc/internal/repos"
 	"jobs-svc/internal/services"
+
+	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 )
 
 func LoadEnv() {
@@ -38,12 +39,33 @@ func main() {
 	log.Println("Jobs database migration completed.")
 
 	// kafka init publisher
-	kafkaBrokers := []string{"localhost:9092"}
-	if os.Getenv("KAFKA_BROKERS") != "" {
-		kafkaBrokers = []string{os.Getenv("KAFKA_BROKERS")}
+	kafkaBrokers := os.Getenv("KAFKA_BROKERS")
+	if kafkaBrokers == "" {
+		log.Fatal("KAFKA_BROKERS environment variable is not set")
 	}
 
-	kafkaPublisher, err := kafka.NewPublisher(kafkaBrokers)
+	kafkaConfig := &kafka.Config{
+		Brokers:          []string{kafkaBrokers},
+		SecurityProtocol: os.Getenv("KAFKA_SECURITY_PROTOCOL"),
+		SASLMechanism:    os.Getenv("KAFKA_SASL_MECHANISM"),
+		ConfluentKey:     os.Getenv("CONFLUENT_KEY"),
+		ConfluentSecret:  os.Getenv("CONFLUENT_SECRET"),
+	}
+
+	// Validate required Kafka credentials
+	if kafkaConfig.SecurityProtocol != "" {
+		if kafkaConfig.ConfluentKey == "" {
+			log.Fatal("KAFKA_USERNAME is required when using SASL authentication")
+		}
+		if kafkaConfig.ConfluentSecret == "" {
+			log.Fatal("KAFKA_PASSWORD is required when using SASL authentication")
+		}
+		if kafkaConfig.SASLMechanism == "" {
+			log.Fatal("KAFKA_SASL_MECHANISM is required when using SASL authentication")
+		}
+	}
+
+	kafkaPublisher, err := kafka.NewPublisher(kafkaConfig)
 	if err != nil {
 		log.Fatalf("Failed to initialize Kafka publisher: %v", err)
 	}
@@ -69,7 +91,7 @@ func main() {
 	}
 	applicationHandler := handlers.ApplicationHandler{
 		ApplicationService: applicationService,
-		KafkaPublisher:    kafkaPublisher,
+		KafkaPublisher:     kafkaPublisher,
 	}
 
 	router := mux.NewRouter()

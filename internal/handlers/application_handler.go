@@ -23,10 +23,11 @@ func (h *ApplicationHandler) CreateApplication(w http.ResponseWriter, r *http.Re
 	var application bson.M
 	log.Println("Creating application..")
 	if err := json.NewDecoder(r.Body).Decode(&application); err != nil {
+		log.Printf("Error decoding request body: %v", err)
 		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
 		return
 	}
-	log.Println("Application:", application)
+	log.Printf("Received application data: %+v", application)
 
 	if application["applicationId"] == nil || application["applicationId"] == "" {
 		application["applicationId"] = primitive.NewObjectID().Hex()
@@ -34,9 +35,11 @@ func (h *ApplicationHandler) CreateApplication(w http.ResponseWriter, r *http.Re
 
 	// snake_case for mongo
 	mongoDoc := convertToSnakeCase(application)
+	log.Printf("Converted to snake_case: %+v", mongoDoc)
 
 	// validate required fields
 	if mongoDoc["job_id"] == nil || mongoDoc["candidate_id"] == nil {
+		log.Printf("Missing required fields. job_id: %v, candidate_id: %v", mongoDoc["job_id"], mongoDoc["candidate_id"])
 		http.Error(w, "JobID and CandidateID are required", http.StatusBadRequest)
 		return
 	}
@@ -56,14 +59,16 @@ func (h *ApplicationHandler) CreateApplication(w http.ResponseWriter, r *http.Re
 		}
 	}
 
-	log.Println("Inserting application:", mongoDoc)
+	log.Printf("Final document to be inserted: %+v", mongoDoc)
 	if err := h.ApplicationService.CreateApplication(mongoDoc); err != nil {
+		log.Printf("Error creating application: %v", err)
 		http.Error(w, "Failed to create application", http.StatusInternalServerError)
 		return
 	}
 
 	// camelCase for res
 	response := convertToCamelCase(mongoDoc)
+	log.Printf("Converted to camelCase for Kafka: %+v", response)
 
 	// publish application to kafka
 	if err := h.KafkaPublisher.PublishApplication(response); err != nil {
@@ -184,7 +189,19 @@ func convertToCamelCase(doc bson.M) bson.M {
 			}
 			result[toCamelCase(k)] = newArr
 		default:
-			result[toCamelCase(k)] = v
+			// Special handling for specific fields
+			switch k {
+			case "candidate_id":
+				result["candidateId"] = v
+			case "job_id":
+				result["jobId"] = v
+			case "application_id":
+				result["applicationId"] = v
+			case "resume_url":
+				result["resumeUrl"] = v
+			default:
+				result[toCamelCase(k)] = v
+			}
 		}
 	}
 
