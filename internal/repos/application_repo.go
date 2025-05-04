@@ -3,10 +3,13 @@ package repos
 import (
 	"context"
 	"errors"
+	"fmt"
+	"log"
+	"strconv"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"log"
-	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -116,4 +119,37 @@ func (repo *AppRepo) GetApplicationByCandidateID(candidateID string) (bson.M, er
 	}
 
 	return application, nil
+}
+
+func (repo *AppRepo) GetApplicationsByCandidateID(candidateID string) ([]bson.M, error) {
+	log.Printf("Searching for applications with candidate_id: %s", candidateID)
+
+	candidateIDFloat, err := strconv.ParseFloat(candidateID, 64)
+	if err != nil {
+		log.Printf("Error converting candidateID to float: %v", err)
+		return nil, fmt.Errorf("invalid candidate ID format: %v", err)
+	}
+
+	filter := bson.M{
+		"$or": []bson.M{
+			{"candidate_id": candidateID},
+			{"candidate_id": candidateIDFloat},
+		},
+	}
+
+	cursor, err := repo.Collection.Find(context.TODO(), filter)
+	if err != nil {
+		log.Printf("Error finding applications: %v", err)
+		return nil, fmt.Errorf("failed to find applications: %v", err)
+	}
+	defer cursor.Close(context.TODO())
+
+	var applications []bson.M
+	if err = cursor.All(context.TODO(), &applications); err != nil {
+		log.Printf("Error decoding applications: %v", err)
+		return nil, fmt.Errorf("failed to decode applications: %v", err)
+	}
+
+	log.Printf("Found %d applications for candidate_id: %s", len(applications), candidateID)
+	return applications, nil
 }

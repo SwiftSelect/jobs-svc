@@ -126,19 +126,49 @@ func (h *ApplicationHandler) GetApplicationByID(w http.ResponseWriter, r *http.R
 func (h *ApplicationHandler) GetApplicationByCandidateID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	candidateID := vars["id"]
-	application, err := h.ApplicationService.GetApplicationByCandidateID(candidateID)
+
+	applications, err := h.ApplicationService.GetApplicationsByCandidateID(candidateID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Error getting applications: %v", err)
+		http.Error(w, "Failed to get applications", http.StatusInternalServerError)
 		return
 	}
 
 	// Convert to camelCase for response
-	response := convertToCamelCase(application)
+	var responses []bson.M
+	for _, app := range applications {
+		responses = append(responses, convertToCamelCase(app))
+	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := json.NewEncoder(w).Encode(responses); err != nil {
+		log.Printf("Error encoding response: %v", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *ApplicationHandler) GetApplicationsByCandidateID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	candidateID := vars["id"]
+
+	applications, err := h.ApplicationService.GetApplicationsByCandidateID(candidateID)
+	if err != nil {
+		log.Printf("Error getting applications: %v", err)
+		http.Error(w, "Failed to get applications", http.StatusInternalServerError)
+		return
+	}
+
+	// Convert to camelCase for response
+	var responses []bson.M
+	for _, app := range applications {
+		responses = append(responses, convertToCamelCase(app))
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(responses); err != nil {
+		log.Printf("Error encoding response: %v", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 		return
 	}
 }
