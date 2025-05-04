@@ -19,6 +19,11 @@ type JobHandler struct {
 	KafkaPublisher *kafka.Publisher
 }
 
+type JobResponse struct {
+	models.Job
+	DaysPostedAgo int `json:"daysPostedAgo"`
+}
+
 func (h *JobHandler) GetJobs(w http.ResponseWriter, r *http.Request) {
 	jobs, err := h.JobService.GetJobs()
 	if err != nil {
@@ -28,6 +33,36 @@ func (h *JobHandler) GetJobs(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(jobs); err != nil {
+		http.Error(w, "Failed to encode jobs response", http.StatusInternalServerError)
+	}
+}
+
+func (h *JobHandler) GetJobsByRecruiterID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	recruiterID := vars["id"]
+	recruiterIDInt, err := strconv.Atoi(recruiterID)
+	if err != nil {
+		http.Error(w, "Invalid recruiter ID", http.StatusBadRequest)
+		return
+	}
+
+	jobs, err := h.JobService.GetJobsByRecruiterID(uint(recruiterIDInt))
+	if err != nil {
+		http.Error(w, "Failed to fetch jobs", http.StatusInternalServerError)
+		return
+	}
+
+	// calculate and add days posted ago field
+	response := make([]JobResponse, len(*jobs))
+	for i, job := range *jobs {
+		response[i] = JobResponse{
+			Job:           job,
+			DaysPostedAgo: job.DaysPostedAgo(),
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, "Failed to encode jobs response", http.StatusInternalServerError)
 	}
 }

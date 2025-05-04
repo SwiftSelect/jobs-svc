@@ -103,6 +103,7 @@ func main() {
 	router.HandleFunc("/jobs", jobHandler.GetJobs).Methods("GET")
 	router.HandleFunc("/jobs/summary", jobHandler.GetJobsByIDs).Methods("POST")
 	router.HandleFunc("/jobs/{id}", jobHandler.GetJobByID).Methods("GET")
+	router.HandleFunc("/jobs/recruiter/{id}", jobHandler.GetJobsByRecruiterID).Methods("GET")
 	router.HandleFunc("/jobs/{id}", jobHandler.UpdateJob).Methods("PUT")
 	router.HandleFunc("/jobs/{id}", jobHandler.DeleteJob).Methods("DELETE")
 

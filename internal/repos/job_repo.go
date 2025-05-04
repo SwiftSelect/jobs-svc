@@ -2,8 +2,9 @@ package repos
 
 import (
 	//"github.com/jinzhu/gorm"
-	"gorm.io/gorm"
 	"jobs-svc/internal/models"
+
+	"gorm.io/gorm"
 )
 
 type JobRepo struct {
@@ -23,6 +24,12 @@ func (repo *JobRepo) GetJobByID(id uint) (*models.Job, error) {
 func (repo *JobRepo) GetJobs() (*[]models.Job, error) {
 	var jobs []models.Job
 	err := repo.DB.Find(&jobs).Error
+	return &jobs, err
+}
+
+func (repo *JobRepo) GetJobsByRecruiterID(recruiterID uint) (*[]models.Job, error) {
+	var jobs []models.Job
+	err := repo.DB.Where("recruiter_id = ?", recruiterID).Find(&jobs).Error
 	return &jobs, err
 }
 

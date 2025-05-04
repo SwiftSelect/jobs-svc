@@ -21,6 +21,10 @@ func (s *JobService) GetJobs() (*[]models.Job, error) {
 	return s.JobRepo.GetJobs()
 }
 
+func (s *JobService) GetJobsByRecruiterID(recruiterID uint) (*[]models.Job, error) {
+	return s.JobRepo.GetJobsByRecruiterID(recruiterID)
+}
+
 func (s *JobService) UpdateJob(job *models.Job) error {
 	return s.JobRepo.UpdateJob(job)
 }
