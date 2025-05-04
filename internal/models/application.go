@@ -14,25 +14,13 @@ import (
 // application model for MongoDB
 type Application struct {
 	ApplicationID string `bson:"application_id" json:"applicationId"`
-	CandidateID   string `bson:"candidate_id" json:"candidateId"`
-	JobID         string `bson:"job_id" json:"jobId"`
+	CandidateID   uint   `bson:"candidate_id" json:"candidateId"`
+	JobID         uint   `bson:"job_id" json:"jobId"`
 	ResumeURL     string `bson:"resumeUrl" json:"resumeUrl"`
 	Status        Status `bson:"status" json:"status"`
 	Email         string `bson:"email" json:"email"`
 	Phone         string `bson:"phone" json:"phone"`
 }
-
-// type Resume struct {
-// 	Text       string       `bson:"text" json:"text"`
-// 	Skills     []string     `bson:"skills" json:"skills"`
-// 	Experience []Experience `bson:"experience" json:"experience"`
-// }
-
-// type Experience struct {
-// 	Company  string `bson:"company" json:"company"`
-// 	Role     string `bson:"role" json:"role"`
-// 	Duration string `bson:"duration" json:"duration"`
-// }
 
 type Status struct {
 	CurrentStage string    `bson:"current_stage" json:"currentStage"`

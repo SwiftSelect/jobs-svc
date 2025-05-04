@@ -11,14 +11,11 @@ import (
 
 type Job struct {
 	gorm.Model
-	Title       string `gorm:"not null" json:"title"`
-	Overview    string `gorm:"not null" json:"overview"`
-	Description string `gorm:"not null" json:"description"`
-	Company     string `gorm:"not null;default:'Engineering'" json:"company"`
-	CompanyID   uint   `gorm:"not null" json:"companyId"`
-	//CompanyDescription string    `json:"companyDescription"`
-	//Size               string    `json:"size"`
-	//Industry           string    `json:"industry"`
+	Title            string    `gorm:"not null" json:"title"`
+	Overview         string    `gorm:"not null" json:"overview"`
+	Description      string    `gorm:"not null" json:"description"`
+	Company          string    `gorm:"not null;default:'Engineering'" json:"company"`
+	CompanyID        uint      `gorm:"not null" json:"companyId"`
 	Skills           string    `gorm:"not null;default:'React, Node.js, TypeScript, AWS, MongoDB'" json:"skills"`
 	Experience       string    `gorm:"not null;default:'5+ yrs React development, Team leadership'" json:"experience"`
 	Location         string    `json:"location"`

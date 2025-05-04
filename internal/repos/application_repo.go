@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strconv"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -82,7 +81,7 @@ func (repo *AppRepo) CreateApplication(application bson.M) error {
 	return err
 }
 
-func (repo *AppRepo) GetApplicationsByJobID(jobID string) ([]bson.M, error) {
+func (repo *AppRepo) GetApplicationsByJobID(jobID uint) ([]bson.M, error) {
 	var applications []bson.M
 	filter := bson.M{"job_id": jobID}
 	cursor, err := repo.Collection.Find(context.TODO(), filter)
@@ -109,33 +108,21 @@ func (repo *AppRepo) GetApplicationByID(applicationID string) (bson.M, error) {
 	return application, nil
 }
 
-func (repo *AppRepo) GetApplicationByCandidateID(candidateID string) (bson.M, error) {
+func (repo *AppRepo) GetApplicationByCandidateID(candidateID uint) (bson.M, error) {
 	var application bson.M
 	filter := bson.M{"candidate_id": candidateID}
 	err := repo.Collection.FindOne(context.TODO(), filter).Decode(&application)
 	if err != nil {
-
 		return nil, err
 	}
 
 	return application, nil
 }
 
-func (repo *AppRepo) GetApplicationsByCandidateID(candidateID string) ([]bson.M, error) {
-	log.Printf("Searching for applications with candidate_id: %s", candidateID)
+func (repo *AppRepo) GetApplicationsByCandidateID(candidateID uint) ([]bson.M, error) {
+	log.Printf("Searching for applications with candidate_id: %d", candidateID)
 
-	candidateIDFloat, err := strconv.ParseFloat(candidateID, 64)
-	if err != nil {
-		log.Printf("Error converting candidateID to float: %v", err)
-		return nil, fmt.Errorf("invalid candidate ID format: %v", err)
-	}
-
-	filter := bson.M{
-		"$or": []bson.M{
-			{"candidate_id": candidateID},
-			{"candidate_id": candidateIDFloat},
-		},
-	}
+	filter := bson.M{"candidate_id": candidateID}
 
 	cursor, err := repo.Collection.Find(context.TODO(), filter)
 	if err != nil {
@@ -150,6 +137,6 @@ func (repo *AppRepo) GetApplicationsByCandidateID(candidateID string) ([]bson.M,
 		return nil, fmt.Errorf("failed to decode applications: %v", err)
 	}
 
-	log.Printf("Found %d applications for candidate_id: %s", len(applications), candidateID)
+	log.Printf("Found %d applications for candidate_id: %d", len(applications), candidateID)
 	return applications, nil
 }

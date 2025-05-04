@@ -6,6 +6,7 @@ import (
 	"jobs-svc/internal/services"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -62,7 +63,11 @@ func (h *ApplicationHandler) CreateApplication(w http.ResponseWriter, r *http.Re
 	log.Printf("Final document to be inserted: %+v", mongoDoc)
 	if err := h.ApplicationService.CreateApplication(mongoDoc); err != nil {
 		log.Printf("Error creating application: %v", err)
-		http.Error(w, "Failed to create application", http.StatusInternalServerError)
+		if err.Error() == "candidate has already applied for this job" {
+			http.Error(w, err.Error(), http.StatusConflict)
+		} else {
+			http.Error(w, "Failed to create application", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -83,8 +88,14 @@ func (h *ApplicationHandler) CreateApplication(w http.ResponseWriter, r *http.Re
 
 func (h *ApplicationHandler) GetApplicationsByJobID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	jobID := vars["id"]
-	applications, err := h.ApplicationService.GetApplicationsByJobID(jobID)
+	jobIDStr := vars["id"]
+	jobID, err := strconv.ParseUint(jobIDStr, 10, 32)
+	if err != nil {
+		http.Error(w, "Invalid job ID format", http.StatusBadRequest)
+		return
+	}
+
+	applications, err := h.ApplicationService.GetApplicationsByJobID(uint(jobID))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -125,9 +136,14 @@ func (h *ApplicationHandler) GetApplicationByID(w http.ResponseWriter, r *http.R
 
 func (h *ApplicationHandler) GetApplicationByCandidateID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	candidateID := vars["id"]
+	candidateIDStr := vars["id"]
+	candidateID, err := strconv.ParseUint(candidateIDStr, 10, 32)
+	if err != nil {
+		http.Error(w, "Invalid candidate ID format", http.StatusBadRequest)
+		return
+	}
 
-	applications, err := h.ApplicationService.GetApplicationsByCandidateID(candidateID)
+	applications, err := h.ApplicationService.GetApplicationsByCandidateID(uint(candidateID))
 	if err != nil {
 		log.Printf("Error getting applications: %v", err)
 		http.Error(w, "Failed to get applications", http.StatusInternalServerError)
@@ -150,9 +166,14 @@ func (h *ApplicationHandler) GetApplicationByCandidateID(w http.ResponseWriter, 
 
 func (h *ApplicationHandler) GetApplicationsByCandidateID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	candidateID := vars["id"]
+	candidateIDStr := vars["id"]
+	candidateID, err := strconv.ParseUint(candidateIDStr, 10, 32)
+	if err != nil {
+		http.Error(w, "Invalid candidate ID format", http.StatusBadRequest)
+		return
+	}
 
-	applications, err := h.ApplicationService.GetApplicationsByCandidateID(candidateID)
+	applications, err := h.ApplicationService.GetApplicationsByCandidateID(uint(candidateID))
 	if err != nil {
 		log.Printf("Error getting applications: %v", err)
 		http.Error(w, "Failed to get applications", http.StatusInternalServerError)

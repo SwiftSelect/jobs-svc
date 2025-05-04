@@ -14,7 +14,7 @@ func (s *ApplicationsService) CreateApplication(app bson.M) error {
 	return s.AppRepo.CreateApplication(app)
 }
 
-func (s *ApplicationsService) GetApplicationsByJobID(jobID string) ([]bson.M, error) {
+func (s *ApplicationsService) GetApplicationsByJobID(jobID uint) ([]bson.M, error) {
 	return s.AppRepo.GetApplicationsByJobID(jobID)
 }
 
@@ -22,11 +22,11 @@ func (s *ApplicationsService) GetApplicationByID(applicationID string) (bson.M, 
 	return s.AppRepo.GetApplicationByID(applicationID)
 }
 
-func (s *ApplicationsService) GetApplicationByCandidateID(candidateID string) (bson.M, error) {
+func (s *ApplicationsService) GetApplicationByCandidateID(candidateID uint) (bson.M, error) {
 	return s.AppRepo.GetApplicationByCandidateID(candidateID)
 }
 
-func (s *ApplicationsService) GetApplicationsByCandidateID(candidateID string) ([]bson.M, error) {
+func (s *ApplicationsService) GetApplicationsByCandidateID(candidateID uint) ([]bson.M, error) {
 	return s.AppRepo.GetApplicationsByCandidateID(candidateID)
 }
 

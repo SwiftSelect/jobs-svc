@@ -26,9 +26,9 @@ type JobKafkaMessage struct {
 
 type ApplicationKafkaMessage struct {
 	ApplicationID string `json:"applicationId"`
-	JobID         string `json:"jobId"`
+	JobID         uint   `json:"jobId"`
 	ResumeURL     string `json:"resumeUrl"`
-	CandidateID   string `json:"candidateId"`
+	CandidateID   uint   `json:"candidateId"`
 }
 
 type Config struct {
@@ -156,52 +156,43 @@ func (p *Publisher) PublishJob(job *models.Job) error {
 func (p *Publisher) PublishApplication(application bson.M) error {
 	log.Printf("Publishing application to Kafka topic: %s", KAFKA_CANDIDATE_TOPIC)
 
-	// Safely extract fields with type assertions, handling both camelCase and snake_case
 	applicationID, _ := application["applicationId"].(string)
-	if applicationID == "" {
-		applicationID, _ = application["application_id"].(string)
-	}
-
-	jobID, _ := application["jobId"].(string)
-	if jobID == "" {
-		jobID, _ = application["job_id"].(string)
-	}
-
 	resumeURL, _ := application["resumeUrl"].(string)
-	if resumeURL == "" {
-		resumeURL, _ = application["resume_url"].(string)
+
+	// Handle jobId as either string or number
+	var jobID uint
+	if strID, ok := application["jobId"].(string); ok {
+		if parsedID, err := strconv.ParseUint(strID, 10, 32); err == nil {
+			jobID = uint(parsedID)
+		}
+	} else if numID, ok := application["jobId"].(int); ok {
+		jobID = uint(numID)
+	} else if numID, ok := application["jobId"].(int64); ok {
+		jobID = uint(numID)
+	} else if numID, ok := application["jobId"].(float64); ok {
+		jobID = uint(numID)
 	}
 
 	// Handle candidateId as either string or number
-	var candidateID string
+	var candidateID uint
 	if strID, ok := application["candidateId"].(string); ok {
-		candidateID = strID
+		if parsedID, err := strconv.ParseUint(strID, 10, 32); err == nil {
+			candidateID = uint(parsedID)
+		}
 	} else if numID, ok := application["candidateId"].(int); ok {
-		candidateID = strconv.Itoa(numID)
+		candidateID = uint(numID)
 	} else if numID, ok := application["candidateId"].(int64); ok {
-		candidateID = strconv.FormatInt(numID, 10)
+		candidateID = uint(numID)
 	} else if numID, ok := application["candidateId"].(float64); ok {
-		candidateID = strconv.FormatInt(int64(numID), 10)
-	} else if strID, ok := application["candidate_id"].(string); ok {
-		candidateID = strID
-	} else if numID, ok := application["candidate_id"].(int); ok {
-		candidateID = strconv.Itoa(numID)
-	} else if numID, ok := application["candidate_id"].(int64); ok {
-		candidateID = strconv.FormatInt(numID, 10)
-	} else if numID, ok := application["candidate_id"].(float64); ok {
-		candidateID = strconv.FormatInt(int64(numID), 10)
+		candidateID = uint(numID)
 	}
 
-	// Validate required fields
-	if applicationID == "" {
-		return fmt.Errorf("applicationId is required")
-	}
-	if jobID == "" {
-		return fmt.Errorf("jobId is required")
-	}
-	if candidateID == "" {
-		return fmt.Errorf("candidateId is required")
-	}
+	// if jobID == 0 {
+	// 	return fmt.Errorf("jobId is required")
+	// }
+	// if candidateID == 0 {
+	// 	return fmt.Errorf("candidateId is required")
+	// }
 
 	kafkaMessage := ApplicationKafkaMessage{
 		ApplicationID: applicationID,
