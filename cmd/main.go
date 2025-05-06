@@ -74,7 +74,7 @@ func main() {
 
 	// init repositories, services,handlers
 	jobRepo := repos.JobRepo{DB: jobsDB}
-	applicationRepo := repos.AppRepo{Collection: appsDB.Collection("applications")}
+	applicationRepo := &repos.ApplicationRepo{Collection: appsDB.Collection("applications")}
 
 	// Create unique index for applications
 	if err := applicationRepo.CreateUniqueIndex(); err != nil {
@@ -82,7 +82,7 @@ func main() {
 	}
 	log.Println("Created unique index on candidate_id and job_id")
 
-	jobService := services.JobService{JobRepo: jobRepo}
+	jobService := services.JobService{JobRepo: &jobRepo}
 	applicationService := services.ApplicationsService{AppRepo: applicationRepo}
 
 	jobHandler := handlers.JobHandler{

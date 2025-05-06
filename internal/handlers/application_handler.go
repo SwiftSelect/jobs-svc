@@ -17,7 +17,7 @@ import (
 
 type ApplicationHandler struct {
 	ApplicationService services.ApplicationsService
-	KafkaPublisher     *kafka.Publisher
+	KafkaPublisher     kafka.PublisherInterface
 }
 
 func (h *ApplicationHandler) CreateApplication(w http.ResponseWriter, r *http.Request) {
@@ -124,7 +124,10 @@ func (h *ApplicationHandler) GetApplicationByID(w http.ResponseWriter, r *http.R
 	}
 
 	// Convert to camelCase for response
-	response := convertToCamelCase(application)
+	var response bson.M
+	if application != nil {
+		response = convertToCamelCase(application)
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -182,11 +185,14 @@ func (h *ApplicationHandler) GetApplicationsByCandidateID(w http.ResponseWriter,
 
 	// Convert to camelCase for response
 	var responses []bson.M
-	for _, app := range applications {
-		responses = append(responses, convertToCamelCase(app))
+	if applications != nil {
+		for _, app := range applications {
+			responses = append(responses, convertToCamelCase(app))
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(responses); err != nil {
 		log.Printf("Error encoding response: %v", err)
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)

@@ -7,7 +7,7 @@ import (
 )
 
 type ApplicationsService struct {
-	AppRepo repos.AppRepo
+	AppRepo repos.ApplicationRepoInterface
 }
 
 func (s *ApplicationsService) CreateApplication(app bson.M) error {
