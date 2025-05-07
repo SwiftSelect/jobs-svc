@@ -6,7 +6,7 @@ import (
 )
 
 type JobService struct {
-	JobRepo repos.JobRepo
+	JobRepo repos.JobRepoInterface
 }
 
 func (s *JobService) CreateJob(job *models.Job) error {

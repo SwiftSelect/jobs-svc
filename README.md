@@ -132,6 +132,7 @@ The service publishes events to two Kafka topics:
    {
      "applicationId": "abc123",
      "jobId": "456",
+     "candidateId": "33",
      "resumeUrl": "http://example.com/resume.pdf"
    }
    ```
@@ -160,4 +161,107 @@ jobs-svc/
 │   └── kafka/            # Kafka integration
 ├── docker-compose.yml    # Docker configuration
 └── README.md            # This file
+```
+
+## Testing
+
+The service includes comprehensive unit tests for both the service layer and HTTP handlers. The tests use mock implementations of dependencies to ensure isolated testing.
+
+### Running Tests
+
+To run all tests:
+```bash
+go test ./...
+```
+
+To run tests with coverage:
+```bash
+go test ./... -cover
+```
+
+To run tests for a specific package:
+```bash
+go test ./internal/handlers -v
+```
+
+### Test Structure
+
+The test suite is organized into the following components:
+
+1. **Mock Implementations**
+   - `MockJobRepo`: Implements `JobRepoInterface` for testing job-related operations
+   - `MockApplicationRepo`: Implements `ApplicationRepoInterface` for testing application-related operations
+   - `MockKafkaPublisher`: Implements `PublisherInterface` for testing Kafka integration
+
+2. **Service Layer Tests**
+   - Job Service (`internal/services/tests/job_service_test.go`)
+     - Tests for all CRUD operations
+     - Tests for job retrieval by recruiter ID
+     - Tests for batch job retrieval by IDs
+   
+   - Application Service (`internal/services/tests/application_service_test.go`)
+     - Tests for application creation
+     - Tests for application retrieval by various criteria
+     - Tests for duplicate application prevention
+
+3. **Handler Layer Tests**
+   - Job Handler (`internal/handlers/tests/job_handler_test.go`)
+     - Tests for all job-related HTTP endpoints
+     - Tests for request validation
+     - Tests for response formatting
+     - Tests for Kafka event publishing
+
+   - Application Handler (`internal/handlers/tests/application_handler_test.go`)
+     - Tests for application submission
+       - Successful application creation
+       - Handling missing required fields
+       - Preventing duplicate applications
+       - Proper error responses
+     - Tests for application retrieval
+       - Getting applications by job ID
+       - Getting applications by candidate ID
+       - Getting single application by ID
+       - Proper handling of not-found cases
+     - Tests for response formatting
+       - Proper status code handling
+       - Consistent error message format
+       - Proper timestamp handling
+
+### Test Coverage
+
+Key areas covered by tests include:
+
+1. **Input Validation**
+   - Required field validation
+   - Data type validation
+   - Duplicate application prevention
+
+2. **Error Handling**
+   - Database errors
+   - Not found scenarios
+   - Invalid input data
+   - Duplicate applications
+
+3. **Response Formatting**
+   - Consistent JSON structure
+   - Proper status codes
+   - Error message formatting
+   - Timestamp formatting
+
+4. **Business Logic**
+   - Application status management
+   - Application retrieval logic
+   - Job-application relationships
+
+### Writing Tests
+
+When adding new features, follow these testing guidelines:
+
+1. **Use Mocks**: Create mock implementations for external dependencies
+2. **Test Edge Cases**: Include tests for error conditions and edge cases
+3. **Consistent Format**: Follow the existing test structure and naming conventions
+4. **Clear Setup**: Each test should have clear setup and teardown phases
+5. **Meaningful Assertions**: Make specific assertions about the expected outcomes
+
+
 ```

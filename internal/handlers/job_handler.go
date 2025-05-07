@@ -16,7 +16,7 @@ import (
 
 type JobHandler struct {
 	JobService     services.JobService
-	KafkaPublisher *kafka.Publisher
+	KafkaPublisher kafka.PublisherInterface
 }
 
 type JobResponse struct {
