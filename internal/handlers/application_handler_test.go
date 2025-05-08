@@ -492,7 +492,7 @@ func TestApplicationHandler_GetApplicationsByCandidateID(t *testing.T) {
 			name:        "successful retrieval",
 			candidateID: "456",
 			mockSetup: func(m *MockApplicationRepo) {
-				m.On("GetApplicationsByCandidateID", uint(456)).Return(mockApplications, nil)
+				m.On("GetApplicationByCandidateID", uint(456)).Return(mockApplications, nil)
 			},
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
@@ -528,7 +528,7 @@ func TestApplicationHandler_GetApplicationsByCandidateID(t *testing.T) {
 			name:        "no applications found",
 			candidateID: "456",
 			mockSetup: func(m *MockApplicationRepo) {
-				m.On("GetApplicationsByCandidateID", uint(456)).Return([]bson.M{}, nil)
+				m.On("GetApplicationByCandidateID", uint(456)).Return([]bson.M{}, nil)
 			},
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
@@ -542,7 +542,7 @@ func TestApplicationHandler_GetApplicationsByCandidateID(t *testing.T) {
 			name:        "repository error",
 			candidateID: "456",
 			mockSetup: func(m *MockApplicationRepo) {
-				m.On("GetApplicationsByCandidateID", uint(456)).Return(nil, errors.New("database error"))
+				m.On("GetApplicationByCandidateID", uint(456)).Return(nil, errors.New("database error"))
 			},
 			expectedStatus: http.StatusInternalServerError,
 			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
@@ -575,7 +575,7 @@ func TestApplicationHandler_GetApplicationsByCandidateID(t *testing.T) {
 
 			// Setup router with vars
 			router := mux.NewRouter()
-			router.HandleFunc("/candidates/{id}/applications", handler.GetApplicationsByCandidateID).Methods(http.MethodGet)
+			router.HandleFunc("/candidates/{id}/applications", handler.GetApplicationByCandidateID).Methods(http.MethodGet)
 			req = mux.SetURLVars(req, map[string]string{"id": tt.candidateID})
 
 			// Execute

@@ -31,8 +31,15 @@ func (h *JobHandler) GetJobs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Initialize response as an empty array
+	response := make([]models.Job, 0)
+	if jobs != nil {
+		response = *jobs
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(jobs); err != nil {
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, "Failed to encode jobs response", http.StatusInternalServerError)
 	}
 }
@@ -52,16 +59,22 @@ func (h *JobHandler) GetJobsByRecruiterID(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// Initialize response as an empty array
+	response := make([]JobResponse, 0)
+
 	// calculate and add days posted ago field
-	response := make([]JobResponse, len(*jobs))
-	for i, job := range *jobs {
-		response[i] = JobResponse{
-			Job:           job,
-			DaysPostedAgo: job.DaysPostedAgo(),
+	if jobs != nil {
+		response = make([]JobResponse, len(*jobs))
+		for i, job := range *jobs {
+			response[i] = JobResponse{
+				Job:           job,
+				DaysPostedAgo: job.DaysPostedAgo(),
+			}
 		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, "Failed to encode jobs response", http.StatusInternalServerError)
 	}
@@ -240,20 +253,26 @@ func (h *JobHandler) GetJobsByIDs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Initialize response as an empty array
+	jobSummaries := make([]models.JobSummary, 0)
+
 	// Convert to summary format
-	jobSummaries := make([]models.JobSummary, len(*jobs))
-	for i, job := range *jobs {
-		jobSummaries[i] = models.JobSummary{
-			ID:            job.ID,
-			Title:         job.Title,
-			Company:       job.Company,
-			DaysPostedAgo: job.DaysPostedAgo(),
-			Location:      job.Location,
-			SalaryRange:   job.SalaryRange,
+	if jobs != nil {
+		jobSummaries = make([]models.JobSummary, len(*jobs))
+		for i, job := range *jobs {
+			jobSummaries[i] = models.JobSummary{
+				ID:            job.ID,
+				Title:         job.Title,
+				Company:       job.Company,
+				DaysPostedAgo: job.DaysPostedAgo(),
+				Location:      job.Location,
+				SalaryRange:   job.SalaryRange,
+			}
 		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(jobSummaries); err != nil {
 		http.Error(w, "Failed to encode jobs response", http.StatusInternalServerError)
 	}

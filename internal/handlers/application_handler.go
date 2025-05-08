@@ -101,9 +101,14 @@ func (h *ApplicationHandler) GetApplicationsByJobID(w http.ResponseWriter, r *ht
 		return
 	}
 
-	var responses []bson.M
-	for _, app := range applications {
-		responses = append(responses, convertToCamelCase(app))
+	// Initialize responses as an empty array
+	responses := make([]bson.M, 0)
+
+	// Convert to camelCase for response
+	if applications != nil {
+		for _, app := range applications {
+			responses = append(responses, convertToCamelCase(app))
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -153,38 +158,10 @@ func (h *ApplicationHandler) GetApplicationByCandidateID(w http.ResponseWriter, 
 		return
 	}
 
-	// Convert to camelCase for response
-	var responses []bson.M
-	for _, app := range applications {
-		responses = append(responses, convertToCamelCase(app))
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(responses); err != nil {
-		log.Printf("Error encoding response: %v", err)
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
-}
-
-func (h *ApplicationHandler) GetApplicationsByCandidateID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	candidateIDStr := vars["id"]
-	candidateID, err := strconv.ParseUint(candidateIDStr, 10, 32)
-	if err != nil {
-		http.Error(w, "Invalid candidate ID format", http.StatusBadRequest)
-		return
-	}
-
-	applications, err := h.ApplicationService.GetApplicationsByCandidateID(uint(candidateID))
-	if err != nil {
-		log.Printf("Error getting applications: %v", err)
-		http.Error(w, "Failed to get applications", http.StatusInternalServerError)
-		return
-	}
+	// Initialize responses as an empty array
+	responses := make([]bson.M, 0)
 
 	// Convert to camelCase for response
-	var responses []bson.M
 	if applications != nil {
 		for _, app := range applications {
 			responses = append(responses, convertToCamelCase(app))
