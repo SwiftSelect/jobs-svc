@@ -232,7 +232,10 @@ func (h *JobHandler) GetJobsByIDs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(jobIDs) == 0 {
-		http.Error(w, "No job IDs provided", http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode([]models.JobSummary{})
+		// http.Error(w, "No job IDs provided", http.StatusBadRequest)
 		return
 	}
 

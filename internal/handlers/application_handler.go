@@ -13,6 +13,7 @@ import (
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type ApplicationHandler struct {
@@ -124,6 +125,10 @@ func (h *ApplicationHandler) GetApplicationByID(w http.ResponseWriter, r *http.R
 	applicationID := vars["id"]
 	application, err := h.ApplicationService.GetApplicationByID(applicationID)
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			http.Error(w, "Application not found", http.StatusNotFound)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
